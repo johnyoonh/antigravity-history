@@ -9,3 +9,8 @@ build/
 .venv/
 venv/
 .env
+
+# Export outputs
+*_export/
+antigravity_export/
+antigravity_archive/
