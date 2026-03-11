@@ -110,8 +110,31 @@ def _parse_step(
 
 
 # ─────────────────────────────────
-# 各类型的详细解析
+# Diff 规范化
 # ─────────────────────────────────
+
+_DIFF_PREFIX = {
+    "UNIFIED_DIFF_LINE_TYPE_INSERT": "+",
+    "UNIFIED_DIFF_LINE_TYPE_DELETE": "-",
+    "UNIFIED_DIFF_LINE_TYPE_CONTEXT": " ",
+}
+
+
+def _normalize_diff(diff) -> str:
+    """将 diff 统一转为字符串。API 可能返回 str 或结构化 dict。"""
+    if isinstance(diff, str):
+        return diff
+    if isinstance(diff, dict):
+        lines_data = diff.get("unifiedDiff", {}).get("lines", [])
+        if not lines_data:
+            return str(diff)
+        parts = []
+        for line in lines_data:
+            text = line.get("text", "")
+            prefix = _DIFF_PREFIX.get(line.get("type", ""), " ")
+            parts.append(f"{prefix}{text}")
+        return "\n".join(parts)
+    return str(diff)
 
 def _parse_user_input(step: dict, include_full: bool) -> Optional[dict]:
     ui = step.get("userInput", {})
@@ -194,7 +217,7 @@ def _parse_code_action(step: dict, include_full: bool) -> Optional[dict]:
     if include_full:
         diff = edit.get("diff")
         if diff:
-            msg["diff"] = diff
+            msg["diff"] = _normalize_diff(diff)
         # artifact 元数据
         artifact = ca.get("artifactMetadata", {})
         if artifact.get("summary"):
