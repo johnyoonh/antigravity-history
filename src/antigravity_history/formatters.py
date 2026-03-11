@@ -168,6 +168,40 @@ def _format_message_md(msg: dict) -> list[str]:
 
 
 # ════════════════════════════════
+# JSON 格式
+# ════════════════════════════════
+
+def format_json(conversations: list[dict]) -> str:
+    """将所有对话格式化为 JSON 字符串。"""
+    return json.dumps(conversations, indent=2, ensure_ascii=False)
+
+
+def build_conversation_record(
+    cascade_id: str,
+    title: str,
+    metadata: dict,
+    messages: list[dict],
+) -> dict:
+    """构建单个对话的 JSON 记录。"""
+    record = {
+        "cascade_id": cascade_id,
+        "title": title,
+        "step_count": metadata.get("stepCount", 0),
+        "created_time": metadata.get("createdTime", ""),
+        "last_modified_time": metadata.get("lastModifiedTime", ""),
+        "messages": messages,
+    }
+    workspaces = metadata.get("workspaces", [])
+    if workspaces:
+        ws_uris = [w.get("workspaceFolderAbsoluteUri", "")
+                    for w in workspaces
+                    if w.get("workspaceFolderAbsoluteUri")]
+        if ws_uris:
+            record["workspaces"] = ws_uris
+    return record
+
+
+# ════════════════════════════════
 # Obsidian 格式
 # ════════════════════════════════
 

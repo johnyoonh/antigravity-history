@@ -10,6 +10,7 @@ CLI 入口 — aghistory 命令。
 
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from pathlib import Path
 from typing import Optional
@@ -37,7 +38,9 @@ from antigravity_history.api import (
 from antigravity_history.parser import parse_steps, FieldLevel
 from antigravity_history.formatters import (
     format_markdown,
+    format_json,
     format_obsidian,
+    build_conversation_record,
     write_conversation,
     safe_filename,
 )
@@ -55,13 +58,15 @@ err_console = Console(stderr=True)
 def _discover_endpoints(
     port: Optional[int] = None,
     token: Optional[str] = None,
+    log: Optional[Console] = None,
 ) -> list[dict]:
     """发现所有可用 LS 端点，失败则退出。"""
+    log = log or console
     if port and token:
-        console.print(f"[dim]使用手动指定: port={port}[/dim]")
+        log.print(f"[dim]使用手动指定: port={port}[/dim]")
         return [{"port": port, "csrf": token, "pid": 0}]
 
-    console.print("[dim]发现 LanguageServer...[/dim]")
+    log.print("[dim]发现 LanguageServer...[/dim]")
     servers = discover_language_servers()
     if not servers:
         err_console.print(
@@ -69,7 +74,7 @@ def _discover_endpoints(
             "[yellow]请确认 Antigravity 正在运行，然后重试。[/yellow]"
         )
         raise typer.Exit(1)
-    console.print(f"[dim]  找到 {len(servers)} 个 language_server 实例[/dim]")
+    log.print(f"[dim]  找到 {len(servers)} 个 language_server 实例[/dim]")
 
     endpoints = find_all_endpoints(servers)
     if not endpoints:
@@ -78,7 +83,7 @@ def _discover_endpoints(
             "[yellow]请确认 Antigravity 正在运行且有打开的 workspace。[/yellow]"
         )
         raise typer.Exit(1)
-    console.print(f"[dim]  连接到 {len(endpoints)} 个端点[/dim]")
+    log.print(f"[dim]  连接到 {len(endpoints)} 个端点[/dim]")
     return endpoints
 
 
@@ -93,8 +98,8 @@ def export(
         help="输出目录",
     ),
     format: str = typer.Option(
-        "md", "-f", "--format",
-        help="输出格式: md / obsidian / all",
+        "all", "-f", "--format",
+        help="输出格式: md / json / obsidian / all",
     ),
     today: bool = typer.Option(False, "--today", help="仅导出今天的对话"),
     ids: Optional[list[str]] = typer.Option(None, "--id", help="导出指定 cascade ID"),
@@ -157,41 +162,76 @@ def export(
         reverse=True,
     )
 
-    # 导出
-    exported_count = 0
-
-    for cascade_id, info in track(sorted_items, description="导出中..."):
-        title = info.get("summary", f"Session {exported_count + 1}")
+    # 并发获取 + 解析（线程安全的纯函数）
+    def _fetch_one(cascade_id, info):
+        title = info.get("summary", "Untitled")
         step_count = info.get("stepCount", 1000)
-
         ep = cascade_ep.get(cascade_id, {"port": default_ep["port"], "csrf": default_ep["csrf"]})
         steps = get_trajectory_steps(ep["port"], ep["csrf"], cascade_id, step_count)
         messages = parse_steps(steps, level)
+        return cascade_id, title, info, messages
 
-        # Markdown
-        if format in ("md", "all"):
-            md_content = format_markdown(title, cascade_id, info, messages)
-            write_conversation(md_content, title, str(output_dir), ".md")
+    # Obsidian 目录提前创建
+    if format in ("obsidian", "all"):
+        obs_dir = output_dir / "obsidian"
+        obs_dir.mkdir(exist_ok=True)
 
-        # Obsidian
-        if format in ("obsidian", "all"):
-            obs_dir = output_dir / "obsidian"
-            obs_dir.mkdir(exist_ok=True)
-            obs_content = format_obsidian(title, cascade_id, info, messages)
-            write_conversation(obs_content, title, str(obs_dir), ".md")
+    all_records = []
+    exported_count = 0
+    failed_count = 0
+    MAX_WORKERS = 4
 
+    from rich.progress import Progress
+    with Progress() as progress:
+        task = progress.add_task("导出中...", total=len(sorted_items))
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
+            futures = {
+                pool.submit(_fetch_one, cid, info): cid
+                for cid, info in sorted_items
+            }
+            for future in as_completed(futures):
+                try:
+                    cascade_id, title, info, messages = future.result()
+                except Exception as e:
+                    cid_short = futures[future][:8]
+                    err_console.print(f"[red]跳过 {cid_short}...: {e}[/red]")
+                    failed_count += 1
+                    progress.advance(task)
+                    continue
 
-        exported_count += 1
+                # 写文件（主线程，不同文件无冲突）
+                if format in ("md", "all"):
+                    md_content = format_markdown(title, cascade_id, info, messages)
+                    write_conversation(md_content, title, str(output_dir), ".md")
+
+                if format in ("obsidian", "all"):
+                    obs_content = format_obsidian(title, cascade_id, info, messages)
+                    write_conversation(obs_content, title, str(obs_dir), ".md")
+
+                if format in ("json", "all"):
+                    record = build_conversation_record(cascade_id, title, info, messages)
+                    all_records.append(record)
+
+                exported_count += 1
+                progress.advance(task)
+
+    # 写 JSON
+    if format in ("json", "all") and all_records:
+        json_path = output_dir / "conversations_export.json"
+        with open(json_path, "w", encoding="utf-8") as f:
+            f.write(format_json(all_records))
 
     # Obsidian 索引
     if format in ("obsidian", "all") and exported_count > 0:
         _write_obsidian_index(output_dir / "obsidian", sorted_items)
 
     # 摘要
-    total_msgs = 0
+    total_msgs = sum(len(r["messages"]) for r in all_records) if all_records else 0
 
     console.print(f"\n[bold green]✅ 导出完成！[/bold green]")
     console.print(f"  对话数: {exported_count}")
+    if failed_count:
+        console.print(f"  [red]失败: {failed_count}[/red]")
     if total_msgs:
         console.print(f"  消息数: {total_msgs}")
     console.print(f"  输出目录: {output_dir.absolute()}")
@@ -228,13 +268,16 @@ def _write_obsidian_index(obs_dir: Path, sorted_items):
 def list_conversations(
     limit: int = typer.Option(50, "-n", "--limit", help="最多显示条数"),
     today: bool = typer.Option(False, "--today", help="仅今天的对话"),
+    json_output: bool = typer.Option(False, "--json", help="以 JSON 格式输出（管道友好）"),
     port: Optional[int] = typer.Option(None, "--port", help="手动指定端口"),
     token: Optional[str] = typer.Option(None, "--token", help="手动指定 CSRF Token"),
 ):
     """📋 列出所有对话。"""
-    console.print(f"\n[bold]🔮 Antigravity Conversations[/bold]\n")
+    # JSON 模式下日志走 stderr，不污染 stdout
+    out = err_console if json_output else console
+    out.print(f"\n[bold]🔮 Antigravity Conversations[/bold]\n")
 
-    endpoints = _discover_endpoints(port, token)
+    endpoints = _discover_endpoints(port, token, log=out)
     summaries, _ = get_all_trajectories_merged(endpoints)
 
     if today:
@@ -250,24 +293,37 @@ def list_conversations(
         reverse=True,
     )[:limit]
 
-    table = Table(title=f"共 {len(summaries)} 个对话")
-    table.add_column("#", style="dim", width=4)
-    table.add_column("最后修改", width=20)
-    table.add_column("步骤", justify="right", width=6)
-    table.add_column("标题", max_width=50)
-    table.add_column("ID", style="dim", width=10)
+    if json_output:
+        import json as json_mod
+        records = []
+        for cid, info in sorted_items:
+            records.append({
+                "cascade_id": cid,
+                "title": info.get("summary", ""),
+                "step_count": info.get("stepCount", 0),
+                "last_modified": info.get("lastModifiedTime", ""),
+                "created": info.get("createdTime", ""),
+            })
+        print(json_mod.dumps(records, indent=2, ensure_ascii=False))
+    else:
+        table = Table(title=f"共 {len(summaries)} 个对话")
+        table.add_column("#", style="dim", width=4)
+        table.add_column("最后修改", width=20)
+        table.add_column("步骤", justify="right", width=6)
+        table.add_column("标题", max_width=50)
+        table.add_column("ID", style="dim", width=10)
 
-    for i, (cid, info) in enumerate(sorted_items):
-        t = info.get("lastModifiedTime", "?")[:19]
-        table.add_row(
-            str(i + 1),
-            t,
-            str(info.get("stepCount", "?")),
-            info.get("summary", "?")[:50],
-            cid[:8] + "...",
-        )
+        for i, (cid, info) in enumerate(sorted_items):
+            t = info.get("lastModifiedTime", "?")[:19]
+            table.add_row(
+                str(i + 1),
+                t,
+                str(info.get("stepCount", "?")),
+                info.get("summary", "?")[:50],
+                cid[:8] + "...",
+            )
 
-    console.print(table)
+        console.print(table)
 
 
 # ════════════════════════════════
