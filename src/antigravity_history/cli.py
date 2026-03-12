@@ -39,7 +39,6 @@ from antigravity_history.parser import parse_steps, FieldLevel
 from antigravity_history.formatters import (
     format_markdown,
     format_json,
-    format_obsidian,
     build_conversation_record,
     write_conversation,
     safe_filename,
@@ -99,7 +98,7 @@ def export(
     ),
     format: str = typer.Option(
         "all", "-f", "--format",
-        help="Output format: md / json / obsidian / all",
+        help="Output format: md / json / all",
     ),
     today: bool = typer.Option(False, "--today", help="Export only today's conversations"),
     ids: Optional[list[str]] = typer.Option(None, "--id", help="Export specific cascade ID(s)"),
@@ -108,7 +107,7 @@ def export(
     port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
     token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
-    """Export conversations to Markdown / JSON / Obsidian format."""
+    """Export conversations to Markdown / JSON format."""
     # Determine field level
     if full:
         level = FieldLevel.FULL
@@ -171,10 +170,6 @@ def export(
         messages = parse_steps(steps, level)
         return cascade_id, title, info, messages
 
-    # Pre-create Obsidian directory
-    if format in ("obsidian", "all"):
-        obs_dir = output_dir / "obsidian"
-        obs_dir.mkdir(exist_ok=True)
 
     all_records = []
     exported_count = 0
@@ -204,9 +199,6 @@ def export(
                     md_content = format_markdown(title, cascade_id, info, messages)
                     write_conversation(md_content, title, str(output_dir), ".md")
 
-                if format in ("obsidian", "all"):
-                    obs_content = format_obsidian(title, cascade_id, info, messages)
-                    write_conversation(obs_content, title, str(obs_dir), ".md")
 
                 if format in ("json", "all"):
                     record = build_conversation_record(cascade_id, title, info, messages)
@@ -221,9 +213,6 @@ def export(
         with open(json_path, "w", encoding="utf-8") as f:
             f.write(format_json(all_records))
 
-    # Obsidian index
-    if format in ("obsidian", "all") and exported_count > 0:
-        _write_obsidian_index(output_dir / "obsidian", sorted_items)
 
     # Summary
     total_msgs = sum(len(r["messages"]) for r in all_records) if all_records else 0
@@ -236,28 +225,6 @@ def export(
         console.print(f"  Messages: {total_msgs}")
     console.print(f"  Output directory: {output_dir.absolute()}")
 
-
-def _write_obsidian_index(obs_dir: Path, sorted_items):
-    """Generate an Obsidian conversation index."""
-    lines = [
-        "---",
-        "tags: [antigravity, conversation, index]",
-        f"date: {date.today().isoformat()}",
-        "---",
-        "",
-        "# Antigravity Conversation Index",
-        "",
-    ]
-    for cascade_id, info in sorted_items:
-        title = info.get("summary", "Untitled")
-        modified = info.get("lastModifiedTime", "")[:10]
-        step_count = info.get("stepCount", "?")
-        safe = safe_filename(title)
-        lines.append(f"- [[{safe}]] ({modified}, {step_count} steps)")
-    
-    index_path = obs_dir / "conversation_index.md"
-    with open(index_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
 
 
 # ════════════════════════════════

@@ -22,7 +22,7 @@ Captures AI thinking chains, code diffs, command outputs, and per-message timest
 | 💻 **Command Outputs** | Preserve terminal outputs with exit codes and working directories |
 | ⏰ **Per-Message Timestamps** | Precise timing for every message in the conversation |
 | 🔄 **Conversation Recovery** | Scan `.pb` files on disk to recover conversations lost after crashes |
-| 📁 **Obsidian Integration** | Export with frontmatter, tags, and `[[wiki-links]]` for your vault |
+| 📁 **Auto-.pb Scanning** | Automatically finds and exports unindexed conversations from disk |
 | 🖥️ **Zero-Config Discovery** | Automatically finds all running Antigravity instances |
 | 🔐 **100% Local & Read-Only** | No internet, no tracking, no data modification |
 
@@ -44,7 +44,7 @@ aghistory export          # ← start here!
 
 | Command | Description |
 |---------|-------------|
-| `aghistory export` | Export conversations to Markdown / JSON / Obsidian |
+| `aghistory export` | Export conversations to Markdown / JSON |
 | `aghistory list` | List all indexed conversations |
 | `aghistory recover` | Recover conversations lost after crashes/updates |
 | `aghistory info` | Show LanguageServer connection status |
@@ -68,10 +68,9 @@ aghistory export --id abc123         # Specific conversation by cascade ID (repe
 ### Output Format & Path
 
 ```bash
-aghistory export                     # Default: all formats (md + json + obsidian)
+aghistory export                     # Default: all formats (md + json)
 aghistory export -f md               # Markdown only
 aghistory export -f json             # JSON only
-aghistory export -f obsidian         # Obsidian vault format (with frontmatter & wiki-links)
 aghistory export -o ./my_folder      # Custom output directory
 ```
 
@@ -84,8 +83,8 @@ aghistory export --today --thinking -f md
 # Export a specific conversation with full detail, as JSON
 aghistory export --id abc123 --full -f json
 
-# Export everything to a custom folder for Obsidian
-aghistory export -f obsidian -o ./my_vault
+# Export everything to a custom folder
+aghistory export -o ./my_backup
 ```
 
 ---
@@ -183,4 +182,4 @@ If this tool saved your conversations, consider giving it a ⭐!
 
 ---
 
-<sub>**Keywords**: antigravity conversation export, antigravity chat history, export antigravity conversations, antigravity backup tool, save antigravity chat, antigravity thinking export, antigravity conversation recovery, antigravity obsidian integration, antigravity export markdown, antigravity session backup</sub>
+<sub>**Keywords**: antigravity conversation export, antigravity chat history, export antigravity conversations, antigravity backup tool, save antigravity chat, antigravity thinking export, antigravity conversation recovery, antigravity export markdown, antigravity session backup</sub>

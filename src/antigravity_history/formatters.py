@@ -201,44 +201,6 @@ def build_conversation_record(
     return record
 
 
-# ════════════════════════════════
-# Obsidian format
-# ════════════════════════════════
-
-def format_obsidian(
-    title: str,
-    cascade_id: str,
-    metadata: dict,
-    messages: list[dict],
-) -> str:
-    """Format a conversation as Obsidian-compatible Markdown (with frontmatter)."""
-    modified = metadata.get("lastModifiedTime", "")[:10]
-
-    user_count = sum(1 for m in messages if m.get("role") == "user")
-    ai_count = sum(1 for m in messages if m.get("role") == "assistant")
-
-    lines = [
-        "---",
-        f'title: "{title}"',
-        f"cascade_id: {cascade_id}",
-        f"date: {modified}",
-        f"messages: {len(messages)}",
-        "tags: [antigravity, chat]",
-        "---",
-        "",
-        f"# {title}",
-        "",
-        f"> User messages: {user_count} | AI responses: {ai_count} | Total steps: {len(messages)}",
-        "",
-        "---",
-        "",
-    ]
-
-    for msg in messages:
-        lines.extend(_format_message_md(msg))
-
-    return "\n".join(lines)
-
 
 # ════════════════════════════════
 # File writing utilities
