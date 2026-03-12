@@ -21,7 +21,7 @@ try:
     from rich.table import Table
     from rich.progress import track
 except ImportError:
-    print("ERROR: 缺少依赖，请运行: pip install antigravity-history")
+    print("ERROR: Missing dependencies. Run: pip install antigravity-history")
     sys.exit(1)
 
 from antigravity_history import __version__
@@ -63,27 +63,27 @@ def _discover_endpoints(
     """发现所有可用 LS 端点，失败则退出。"""
     log = log or console
     if port and token:
-        log.print(f"[dim]使用手动指定: port={port}[/dim]")
+        log.print(f"[dim]Using manual config: port={port}[/dim]")
         return [{"port": port, "csrf": token, "pid": 0}]
 
-    log.print("[dim]发现 LanguageServer...[/dim]")
+    log.print("[dim]Discovering LanguageServer...[/dim]")
     servers = discover_language_servers()
     if not servers:
         err_console.print(
-            "[bold red]未找到 Antigravity LanguageServer 进程。[/bold red]\n"
-            "[yellow]请确认 Antigravity 正在运行，然后重试。[/yellow]"
+            "[bold red]No Antigravity LanguageServer process found.[/bold red]\n"
+            "[yellow]Please make sure Antigravity is running and try again.[/yellow]"
         )
         raise typer.Exit(1)
-    log.print(f"[dim]  找到 {len(servers)} 个 language_server 实例[/dim]")
+    log.print(f"[dim]  Found {len(servers)} language_server instance(s)[/dim]")
 
     endpoints = find_all_endpoints(servers)
     if not endpoints:
         err_console.print(
-            "[bold red]无法连接到任何 LanguageServer 端口。[/bold red]\n"
-            "[yellow]请确认 Antigravity 正在运行且有打开的 workspace。[/yellow]"
+            "[bold red]Cannot connect to any LanguageServer port.[/bold red]\n"
+            "[yellow]Please make sure Antigravity is running with an open workspace.[/yellow]"
         )
         raise typer.Exit(1)
-    log.print(f"[dim]  连接到 {len(endpoints)} 个端点[/dim]")
+    log.print(f"[dim]  Connected to {len(endpoints)} endpoint(s)[/dim]")
     return endpoints
 
 
@@ -95,18 +95,18 @@ def _discover_endpoints(
 def export(
     output: str = typer.Option(
         "./antigravity_export", "-o", "--output",
-        help="输出目录",
+        help="Output directory",
     ),
     format: str = typer.Option(
         "all", "-f", "--format",
-        help="输出格式: md / json / obsidian / all",
+        help="Output format: md / json / obsidian / all",
     ),
-    today: bool = typer.Option(False, "--today", help="仅导出今天的对话"),
-    ids: Optional[list[str]] = typer.Option(None, "--id", help="导出指定 cascade ID"),
-    thinking: bool = typer.Option(False, "--thinking", help="包含 AI 思考过程"),
-    full: bool = typer.Option(False, "--full", help="包含所有扩展字段 (thinking+diff+output)"),
-    port: Optional[int] = typer.Option(None, "--port", help="手动指定端口"),
-    token: Optional[str] = typer.Option(None, "--token", help="手动指定 CSRF Token"),
+    today: bool = typer.Option(False, "--today", help="Export only today's conversations"),
+    ids: Optional[list[str]] = typer.Option(None, "--id", help="Export specific cascade ID(s)"),
+    thinking: bool = typer.Option(False, "--thinking", help="Include AI thinking process"),
+    full: bool = typer.Option(False, "--full", help="Include all extended fields (thinking+diff+output)"),
+    port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
+    token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
     """📤 导出对话为 Markdown / JSON / Obsidian 格式。"""
     # 确定字段级别
@@ -118,14 +118,14 @@ def export(
         level = FieldLevel.DEFAULT
 
     console.print(f"\n[bold]🔮 Antigravity History Export[/bold] v{__version__}")
-    console.print(f"[dim]字段级别: {level}[/dim]\n")
+    console.print(f"[dim]Field level: {level}[/dim]\n")
 
     endpoints = _discover_endpoints(port, token)
 
     # 获取所有 LS 实例的对话列表（合并去重）
-    console.print("[dim]获取对话列表（扫描所有 workspace）...[/dim]")
+    console.print("[dim]Fetching conversation list (scanning all workspaces)...[/dim]")
     summaries, cascade_ep = get_all_trajectories_merged(endpoints)
-    console.print(f"[dim]  合并后共发现 {len(summaries)} 个对话[/dim]")
+    console.print(f"[dim]  Found {len(summaries)} conversation(s) after merge[/dim]")
 
     # 指定 ID（支持未索引对话按需加载）
     default_ep = endpoints[0]
@@ -133,7 +133,7 @@ def export(
         for cid in ids:
             if cid not in summaries:
                 summaries[cid] = {
-                    "summary": f"[按需加载] {cid[:8]}...",
+                    "summary": f"[on-demand] {cid[:8]}...",
                     "stepCount": 1000,
                 }
                 cascade_ep[cid] = {"port": default_ep["port"], "csrf": default_ep["csrf"]}
@@ -145,10 +145,10 @@ def export(
             k: v for k, v in summaries.items()
             if v.get("lastModifiedTime", "").startswith(today_str)
         }
-        console.print(f"[dim]  今天的对话: {len(summaries)} 个[/dim]")
+        console.print(f"[dim]  Today's conversations: {len(summaries)}[/dim]")
 
     if not summaries:
-        console.print("[yellow]没有找到符合条件的对话。[/yellow]")
+        console.print("[yellow]No conversations match the criteria.[/yellow]")
         raise typer.Exit(0)
 
     # 创建输出目录
@@ -183,7 +183,7 @@ def export(
 
     from rich.progress import Progress
     with Progress() as progress:
-        task = progress.add_task("导出中...", total=len(sorted_items))
+        task = progress.add_task("Exporting...", total=len(sorted_items))
         with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
             futures = {
                 pool.submit(_fetch_one, cid, info): cid
@@ -194,7 +194,7 @@ def export(
                     cascade_id, title, info, messages = future.result()
                 except Exception as e:
                     cid_short = futures[future][:8]
-                    err_console.print(f"[red]跳过 {cid_short}...: {e}[/red]")
+                    err_console.print(f"[red]Skipped {cid_short}...: {e}[/red]")
                     failed_count += 1
                     progress.advance(task)
                     continue
@@ -228,13 +228,13 @@ def export(
     # 摘要
     total_msgs = sum(len(r["messages"]) for r in all_records) if all_records else 0
 
-    console.print(f"\n[bold green]✅ 导出完成！[/bold green]")
-    console.print(f"  对话数: {exported_count}")
+    console.print(f"\n[bold green]✅ Export complete![/bold green]")
+    console.print(f"  Conversations: {exported_count}")
     if failed_count:
-        console.print(f"  [red]失败: {failed_count}[/red]")
+        console.print(f"  [red]Failed: {failed_count}[/red]")
     if total_msgs:
-        console.print(f"  消息数: {total_msgs}")
-    console.print(f"  输出目录: {output_dir.absolute()}")
+        console.print(f"  Messages: {total_msgs}")
+    console.print(f"  Output directory: {output_dir.absolute()}")
 
 
 def _write_obsidian_index(obs_dir: Path, sorted_items):
@@ -245,7 +245,7 @@ def _write_obsidian_index(obs_dir: Path, sorted_items):
         f"date: {date.today().isoformat()}",
         "---",
         "",
-        "# Antigravity 对话索引",
+        "# Antigravity Conversation Index",
         "",
     ]
     for cascade_id, info in sorted_items:
@@ -255,7 +255,7 @@ def _write_obsidian_index(obs_dir: Path, sorted_items):
         safe = safe_filename(title)
         lines.append(f"- [[{safe}]] ({modified}, {step_count} steps)")
     
-    index_path = obs_dir / "对话索引.md"
+    index_path = obs_dir / "conversation_index.md"
     with open(index_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
@@ -266,11 +266,11 @@ def _write_obsidian_index(obs_dir: Path, sorted_items):
 
 @app.command(name="list")
 def list_conversations(
-    limit: int = typer.Option(50, "-n", "--limit", help="最多显示条数"),
-    today: bool = typer.Option(False, "--today", help="仅今天的对话"),
-    json_output: bool = typer.Option(False, "--json", help="以 JSON 格式输出（管道友好）"),
-    port: Optional[int] = typer.Option(None, "--port", help="手动指定端口"),
-    token: Optional[str] = typer.Option(None, "--token", help="手动指定 CSRF Token"),
+    limit: int = typer.Option(50, "-n", "--limit", help="Max number of conversations to show"),
+    today: bool = typer.Option(False, "--today", help="Show only today's conversations"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON (pipe-friendly)"),
+    port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
+    token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
     """📋 列出所有对话。"""
     # JSON 模式下日志走 stderr，不污染 stdout
@@ -306,11 +306,11 @@ def list_conversations(
             })
         print(json_mod.dumps(records, indent=2, ensure_ascii=False))
     else:
-        table = Table(title=f"共 {len(summaries)} 个对话")
+        table = Table(title=f"{len(summaries)} conversation(s) total")
         table.add_column("#", style="dim", width=4)
-        table.add_column("最后修改", width=20)
-        table.add_column("步骤", justify="right", width=6)
-        table.add_column("标题", max_width=50)
+        table.add_column("Last Modified", width=20)
+        table.add_column("Steps", justify="right", width=6)
+        table.add_column("Title", max_width=50)
         table.add_column("ID", style="dim", width=10)
 
         for i, (cid, info) in enumerate(sorted_items):
@@ -334,18 +334,18 @@ def list_conversations(
 def recover(
     conv_dir: str = typer.Option(
         None, "--conv-dir",
-        help="conversations 目录路径 (默认: ~/.gemini/antigravity/conversations)",
+        help="Conversations directory path (default: ~/.gemini/antigravity/conversations)",
     ),
-    dry_run: bool = typer.Option(False, "--dry-run", help="仅检测，不执行恢复"),
-    port: Optional[int] = typer.Option(None, "--port", help="手动指定端口"),
-    token: Optional[str] = typer.Option(None, "--token", help="手动指定 CSRF Token"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Detect only, do not recover"),
+    port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
+    token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
     """🔄 恢复丢失的对话（扫描 .pb 文件并通过 API 重新加载）。"""
     if conv_dir is None:
         conv_dir = os.path.expanduser("~/.gemini/antigravity/conversations")
 
     if not os.path.isdir(conv_dir):
-        err_console.print(f"[red]目录不存在: {conv_dir}[/red]")
+        err_console.print(f"[red]Directory not found: {conv_dir}[/red]")
         raise typer.Exit(1)
 
     console.print(f"\n[bold]🔄 Antigravity Conversation Recovery[/bold]\n")
@@ -357,17 +357,17 @@ def recover(
     # 已索引的对话（合并所有 LS）
     indexed, _ = get_all_trajectories_merged(endpoints)
     indexed_ids = set(indexed.keys())
-    console.print(f"[dim]已索引对话: {len(indexed_ids)} 个[/dim]")
+    console.print(f"[dim]Indexed conversations: {len(indexed_ids)}[/dim]")
 
     # 扫描 .pb 文件
     pb_files = sorted([f for f in os.listdir(conv_dir) if f.endswith('.pb')])
-    console.print(f"[dim].pb 文件: {len(pb_files)} 个[/dim]\n")
+    console.print(f"[dim].pb files: {len(pb_files)}[/dim]\n")
 
     activated = []
     failed = []
     already_indexed = []
 
-    for i, f in enumerate(track(pb_files, description="扫描中...")):
+    for i, f in enumerate(track(pb_files, description="Scanning...")):
         cascade_id = f.replace('.pb', '')
         is_indexed = cascade_id in indexed_ids
         size_kb = os.path.getsize(os.path.join(conv_dir, f)) // 1024
@@ -377,30 +377,30 @@ def recover(
             continue
 
         if dry_run:
-            console.print(f"  [yellow]🔍 未索引[/yellow] {cascade_id[:8]}... ({size_kb}KB)")
+            console.print(f"  [yellow]🔍 Unindexed[/yellow] {cascade_id[:8]}... ({size_kb}KB)")
             continue
 
         # 尝试通过 API 按需加载
         result = get_trajectory_steps(p, c, cascade_id, step_count=5)
         if result:
             activated.append(cascade_id)
-            console.print(f"  [green]✅ 已激活[/green] {cascade_id[:8]}... ({size_kb}KB, {len(result)}+ steps)")
+            console.print(f"  [green]✅ Activated[/green] {cascade_id[:8]}... ({size_kb}KB, {len(result)}+ steps)")
         else:
             failed.append(cascade_id)
-            console.print(f"  [red]❌ 失败[/red] {cascade_id[:8]}... ({size_kb}KB)")
+            console.print(f"  [red]❌ Failed[/red] {cascade_id[:8]}... ({size_kb}KB)")
 
     # 汇总
     console.print(f"\n[bold]{'─' * 40}[/bold]")
-    console.print(f"  总 .pb 文件: {len(pb_files)}")
-    console.print(f"  已索引: {len(already_indexed)}")
+    console.print(f"  Total .pb files: {len(pb_files)}")
+    console.print(f"  Indexed: {len(already_indexed)}")
     if dry_run:
         unindexed = len(pb_files) - len(already_indexed)
-        console.print(f"  未索引: {unindexed}")
-        console.print(f"\n[yellow]Dry run 模式，未执行恢复。去掉 --dry-run 执行实际恢复。[/yellow]")
+        console.print(f"  Unindexed: {unindexed}")
+        console.print(f"\n[yellow]Dry run mode. Remove --dry-run to perform actual recovery.[/yellow]")
     else:
-        console.print(f"  [green]新激活: {len(activated)}[/green]")
+        console.print(f"  [green]Newly activated: {len(activated)}[/green]")
         if failed:
-            console.print(f"  [red]失败: {len(failed)}[/red]")
+            console.print(f"  [red]Failed: {len(failed)}[/red]")
 
 
 # ════════════════════════════════
@@ -409,8 +409,8 @@ def recover(
 
 @app.command()
 def info(
-    port: Optional[int] = typer.Option(None, "--port", help="手动指定端口"),
-    token: Optional[str] = typer.Option(None, "--token", help="手动指定 CSRF Token"),
+    port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
+    token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
     """ℹ️  显示 LanguageServer 状态信息。"""
     console.print(f"\n[bold]🔮 Antigravity History[/bold] v{__version__}\n")
@@ -418,11 +418,10 @@ def info(
     endpoints = _discover_endpoints(port, token)
     summaries, _ = get_all_trajectories_merged(endpoints)
 
-    console.print(f"  LanguageServer 端点: {len(endpoints)} 个")
-    console.print(f"  对话总数: {len(summaries)}")
+    console.print(f"  LanguageServer endpoints: {len(endpoints)}")
+    console.print(f"  Total conversations: {len(summaries)}")
 
     if summaries:
-        # 找最新和最旧的对话
         sorted_items = sorted(
             summaries.items(),
             key=lambda x: x[1].get("lastModifiedTime", ""),
@@ -430,8 +429,8 @@ def info(
         oldest = sorted_items[0][1].get("createdTime", "?")[:10]
         newest = sorted_items[-1][1].get("lastModifiedTime", "?")[:10]
         total_steps = sum(v.get("stepCount", 0) for v in summaries.values())
-        console.print(f"  总步骤数: {total_steps}")
-        console.print(f"  时间范围: {oldest} ~ {newest}")
+        console.print(f"  Total steps: {total_steps}")
+        console.print(f"  Time range: {oldest} ~ {newest}")
 
 
 # ════════════════════════════════
@@ -450,7 +449,7 @@ def main(
         False, "--version", "-v",
         callback=version_callback,
         is_eager=True,
-        help="显示版本号",
+        help="Show version",
     ),
 ):
     """🔮 Export, recover, and analyze your Antigravity conversations."""

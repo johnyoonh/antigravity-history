@@ -27,9 +27,9 @@ def format_markdown(
     lines = [
         f"# {title}", "",
         f"- **Cascade ID**: `{cascade_id}`",
-        f"- **步骤数**: {metadata.get('stepCount', '?')}",
-        f"- **创建时间**: {metadata.get('createdTime', '?')}",
-        f"- **最后修改**: {metadata.get('lastModifiedTime', '?')}",
+        f"- **Steps**: {metadata.get('stepCount', '?')}",
+        f"- **Created**: {metadata.get('createdTime', '?')}",
+        f"- **Last Modified**: {metadata.get('lastModifiedTime', '?')}",
     ]
 
     # workspace 信息
@@ -40,7 +40,7 @@ def format_markdown(
             lines.append(f"- **Workspace**: {', '.join(ws_uris)}")
 
     lines.extend([
-        f"- **导出时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        f"- **Exported**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
         "", "---", ""
     ])
 
@@ -228,7 +228,7 @@ def format_obsidian(
         "",
         f"# {title}",
         "",
-        f"> 用户消息: {user_count} | AI 回复: {ai_count} | 总步骤: {len(messages)}",
+        f"> User messages: {user_count} | AI responses: {ai_count} | Total steps: {len(messages)}",
         "",
         "---",
         "",

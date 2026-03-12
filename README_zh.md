@@ -5,7 +5,7 @@
 [![PyPI Version](https://img.shields.io/pypi/v/antigravity-history)](https://pypi.org/project/antigravity-history/)
 [![Python](https://img.shields.io/pypi/pyversions/antigravity-history)](https://pypi.org/project/antigravity-history/)
 [![License](https://img.shields.io/github/license/neo1027144-creator/antigravity-history)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue)]()
+[![Platform](https://img.shields.io/badge/platform-Windows-blue)]()
 
 > **导出、恢复、分析你的 Antigravity AI 对话 — 完整还原每一条消息。**
 
