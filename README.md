@@ -119,12 +119,6 @@ Yes. The tool communicates with Antigravity's local LanguageServer API, which is
 </details>
 
 <details>
-<summary><b>Will this get my account banned?</b></summary>
-
-No. All communication is with `localhost` — no requests are sent to any external server. The tool only reads your own conversation data using the same API that Antigravity's own UI uses.
-</details>
-
-<details>
 <summary><b>What are the three export levels?</b></summary>
 
 - **Default**: User messages, AI responses, tool call summaries
