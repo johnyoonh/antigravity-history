@@ -145,7 +145,14 @@ Antigravity stores conversations as `.pb` files on disk, but sometimes loses tra
 <details>
 <summary><b>Can I use this as a Python library?</b></summary>
 
-Currently CLI-only. Library API (`from antigravity_history import ...`) is planned for v0.2.
+Yes! You can import and use it directly in your Python code:
+
+```python
+from antigravity_history.discovery import discover_language_servers, find_all_endpoints
+from antigravity_history.api import get_all_trajectories_merged, get_trajectory_steps
+from antigravity_history.parser import parse_steps, FieldLevel
+from antigravity_history.formatters import format_markdown, format_json
+```
 </details>
 
 <details>
