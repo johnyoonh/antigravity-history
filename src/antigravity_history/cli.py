@@ -124,10 +124,30 @@ def export(
     # Fetch conversation list from all LS instances (merge & deduplicate)
     console.print("[dim]Fetching conversation list (scanning all workspaces)...[/dim]")
     summaries, cascade_ep = get_all_trajectories_merged(endpoints)
-    console.print(f"[dim]  Found {len(summaries)} conversation(s) after merge[/dim]")
+    indexed_count = len(summaries)
+    console.print(f"[dim]  Indexed conversations: {indexed_count}[/dim]")
 
-    # Specified IDs (support on-demand loading for unindexed conversations)
     default_ep = endpoints[0]
+
+    # Scan .pb files to find unindexed conversations
+    conv_dir = os.path.expanduser("~/.gemini/antigravity/conversations")
+    if os.path.isdir(conv_dir):
+        pb_files = [f for f in os.listdir(conv_dir) if f.endswith('.pb')]
+        unindexed_count = 0
+        for f in pb_files:
+            cid = f.replace('.pb', '')
+            if cid not in summaries:
+                summaries[cid] = {
+                    "summary": f"[unindexed] {cid[:8]}...",
+                    "stepCount": 1000,
+                }
+                cascade_ep[cid] = {"port": default_ep["port"], "csrf": default_ep["csrf"]}
+                unindexed_count += 1
+        if unindexed_count:
+            console.print(f"[dim]  Unindexed .pb files: {unindexed_count}[/dim]")
+        console.print(f"[dim]  Total to export: {len(summaries)}[/dim]")
+
+    # Specified IDs (support on-demand loading)
     if ids:
         for cid in ids:
             if cid not in summaries:
