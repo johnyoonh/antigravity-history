@@ -11,7 +11,7 @@ Subcommands:
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
@@ -193,7 +193,8 @@ def export(
 
     all_records = []
     exported_count = 0
-    failed_count = 0
+    failed_list = []  # [(cascade_id, error_str)]
+    exported_list = []  # [(cascade_id, title, msg_count)]
     MAX_WORKERS = 4
 
     from rich.progress import Progress
@@ -205,12 +206,12 @@ def export(
                 for cid, info in sorted_items
             }
             for future in as_completed(futures):
+                cid = futures[future]
                 try:
                     cascade_id, title, info, messages = future.result()
                 except Exception as e:
-                    cid_short = futures[future][:8]
-                    err_console.print(f"[red]Skipped {cid_short}...: {e}[/red]")
-                    failed_count += 1
+                    err_console.print(f"[red]Skipped {cid[:8]}...: {e}[/red]")
+                    failed_list.append((cid, str(e)))
                     progress.advance(task)
                     continue
 
@@ -219,12 +220,12 @@ def export(
                     md_content = format_markdown(title, cascade_id, info, messages)
                     write_conversation(md_content, title, str(output_dir), ".md")
 
-
                 if format in ("json", "all"):
                     record = build_conversation_record(cascade_id, title, info, messages)
                     all_records.append(record)
 
                 exported_count += 1
+                exported_list.append((cascade_id, title, len(messages)))
                 progress.advance(task)
 
     # Write JSON
@@ -233,18 +234,61 @@ def export(
         with open(json_path, "w", encoding="utf-8") as f:
             f.write(format_json(all_records))
 
+    # Write export report
+    _write_export_report(output_dir, exported_list, failed_list)
 
     # Summary
     total_msgs = sum(len(r["messages"]) for r in all_records) if all_records else 0
 
     console.print(f"\n[bold green]Export complete![/bold green]")
     console.print(f"  Conversations: {exported_count}")
-    if failed_count:
-        console.print(f"  [red]Failed: {failed_count}[/red]")
+    if failed_list:
+        console.print(f"  [red]Failed: {len(failed_list)}[/red]")
     if total_msgs:
         console.print(f"  Messages: {total_msgs}")
+    console.print(f"  Report: {output_dir.absolute() / 'export_report.md'}")
     console.print(f"  Output directory: {output_dir.absolute()}")
 
+
+def _write_export_report(
+    output_dir: Path,
+    exported: list[tuple],
+    failed: list[tuple],
+):
+    """Write export_report.md summarizing the export results."""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    total = len(exported) + len(failed)
+    lines = [
+        "# Export Report",
+        "",
+        f"- **Time**: {now}",
+        f"- **Total**: {total}",
+        f"- **Exported**: {len(exported)}",
+        f"- **Failed**: {len(failed)}",
+        "",
+    ]
+
+    if failed:
+        lines.append("## ❌ Failed Conversations")
+        lines.append("")
+        lines.append("| # | Cascade ID | Error |")
+        lines.append("|---|-----------|-------|")
+        for i, (cid, err) in enumerate(failed, 1):
+            lines.append(f"| {i} | `{cid}` | {err} |")
+        lines.append("")
+
+    if exported:
+        lines.append("## ✅ Exported Conversations")
+        lines.append("")
+        lines.append("| # | Title | Messages | Cascade ID |")
+        lines.append("|---|-------|----------|-----------|")
+        for i, (cid, title, msg_count) in enumerate(exported, 1):
+            lines.append(f"| {i} | {title[:50]} | {msg_count} | `{cid[:8]}...` |")
+        lines.append("")
+
+    report_path = output_dir / "export_report.md"
+    with open(report_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
 
 
 # ════════════════════════════════
