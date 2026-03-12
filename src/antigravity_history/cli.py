@@ -108,7 +108,7 @@ def export(
     port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
     token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
-    """📤 导出对话为 Markdown / JSON / Obsidian 格式。"""
+    """📤 Export conversations to Markdown / JSON / Obsidian format."""
     # 确定字段级别
     if full:
         level = FieldLevel.FULL
@@ -272,7 +272,7 @@ def list_conversations(
     port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
     token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
-    """📋 列出所有对话。"""
+    """📋 List all conversations."""
     # JSON 模式下日志走 stderr，不污染 stdout
     out = err_console if json_output else console
     out.print(f"\n[bold]🔮 Antigravity Conversations[/bold]\n")
@@ -340,7 +340,7 @@ def recover(
     port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
     token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
-    """🔄 恢复丢失的对话（扫描 .pb 文件并通过 API 重新加载）。"""
+    """🔄 Recover lost conversations (scan .pb files and reload via API)."""
     if conv_dir is None:
         conv_dir = os.path.expanduser("~/.gemini/antigravity/conversations")
 
@@ -412,7 +412,7 @@ def info(
     port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
     token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
-    """ℹ️  显示 LanguageServer 状态信息。"""
+    """ℹ️  Show LanguageServer status information."""
     console.print(f"\n[bold]🔮 Antigravity History[/bold] v{__version__}\n")
 
     endpoints = _discover_endpoints(port, token)
