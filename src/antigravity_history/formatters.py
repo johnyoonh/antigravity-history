@@ -202,6 +202,7 @@ def build_conversation_record(
 
 
 
+
 # ════════════════════════════════
 # File writing utilities
 # ════════════════════════════════
@@ -218,8 +219,13 @@ def write_conversation(
     extension: str = ".md",
 ) -> str:
     """Write formatted content to a file, return the file path."""
-    filename = safe_filename(title) + extension
-    filepath = os.path.join(output_dir, filename)
+    base = safe_filename(title)
+    filepath = os.path.join(output_dir, base + extension)
+    # Deduplicate: append _2, _3, ... if file already exists
+    counter = 2
+    while os.path.exists(filepath):
+        filepath = os.path.join(output_dir, f"{base}_{counter}{extension}")
+        counter += 1
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(content)
     return filepath
