@@ -87,7 +87,7 @@ aghistory info
 | Option | Description |
 |--------|-------------|
 | `-o, --output DIR` | Output directory (default: `./antigravity_export`) |
-| `-f, --format FMT` | Output format: `md` / `obsidian` / `all` |
+| `-f, --format FMT` | Output format: `md` / `json` / `obsidian` / `all` |
 | `--thinking` | Include AI's hidden reasoning process |
 | `--full` | Include all extended fields (thinking + diffs + outputs) |
 | `--today` | Export only today's conversations |

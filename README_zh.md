@@ -77,7 +77,7 @@ aghistory info
 
 | 命令 | 说明 |
 |------|------|
-| `aghistory export` | 导出对话为 Markdown 或 Obsidian 格式 |
+| `aghistory export` | 导出对话为 Markdown / JSON / Obsidian 格式 |
 | `aghistory list` | 列出所有已索引的对话 |
 | `aghistory recover` | 恢复崩溃/更新后丢失的对话 |
 | `aghistory info` | 显示 LanguageServer 连接状态 |
@@ -87,7 +87,7 @@ aghistory info
 | 选项 | 说明 |
 |------|------|
 | `-o, --output 目录` | 输出目录（默认：`./antigravity_export`） |
-| `-f, --format 格式` | 输出格式：`md` / `obsidian` / `all` |
+| `-f, --format 格式` | 输出格式：`md` / `json` / `obsidian` / `all` |
 | `--thinking` | 包含 AI 推理过程 |
 | `--full` | 包含所有扩展字段 |
 | `--today` | 仅导出今天的对话 |
