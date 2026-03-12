@@ -47,7 +47,7 @@ from antigravity_history.formatters import (
 
 app = typer.Typer(
     name="aghistory",
-    help="🔮 Export, recover, and analyze your Antigravity conversations.",
+    help="Export, recover, and analyze your Antigravity conversations.",
     add_completion=False,
     no_args_is_help=True,
 )
@@ -108,7 +108,7 @@ def export(
     port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
     token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
-    """📤 Export conversations to Markdown / JSON / Obsidian format."""
+    """Export conversations to Markdown / JSON / Obsidian format."""
     # 确定字段级别
     if full:
         level = FieldLevel.FULL
@@ -117,7 +117,7 @@ def export(
     else:
         level = FieldLevel.DEFAULT
 
-    console.print(f"\n[bold]🔮 Antigravity History Export[/bold] v{__version__}")
+    console.print(f"\n[bold]Antigravity History Export[/bold] v{__version__}")
     console.print(f"[dim]Field level: {level}[/dim]\n")
 
     endpoints = _discover_endpoints(port, token)
@@ -228,7 +228,7 @@ def export(
     # 摘要
     total_msgs = sum(len(r["messages"]) for r in all_records) if all_records else 0
 
-    console.print(f"\n[bold green]✅ Export complete![/bold green]")
+    console.print(f"\n[bold green]Export complete![/bold green]")
     console.print(f"  Conversations: {exported_count}")
     if failed_count:
         console.print(f"  [red]Failed: {failed_count}[/red]")
@@ -272,10 +272,10 @@ def list_conversations(
     port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
     token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
-    """📋 List all conversations."""
+    """List all conversations."""
     # JSON 模式下日志走 stderr，不污染 stdout
     out = err_console if json_output else console
-    out.print(f"\n[bold]🔮 Antigravity Conversations[/bold]\n")
+    out.print(f"\n[bold]Antigravity Conversations[/bold]\n")
 
     endpoints = _discover_endpoints(port, token, log=out)
     summaries, _ = get_all_trajectories_merged(endpoints)
@@ -340,7 +340,7 @@ def recover(
     port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
     token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
-    """🔄 Recover lost conversations (scan .pb files and reload via API)."""
+    """Recover lost conversations (scan .pb files and reload via API)."""
     if conv_dir is None:
         conv_dir = os.path.expanduser("~/.gemini/antigravity/conversations")
 
@@ -348,7 +348,7 @@ def recover(
         err_console.print(f"[red]Directory not found: {conv_dir}[/red]")
         raise typer.Exit(1)
 
-    console.print(f"\n[bold]🔄 Antigravity Conversation Recovery[/bold]\n")
+    console.print(f"\n[bold]Antigravity Conversation Recovery[/bold]\n")
 
     endpoints = _discover_endpoints(port, token)
     default_ep = endpoints[0]
@@ -377,17 +377,17 @@ def recover(
             continue
 
         if dry_run:
-            console.print(f"  [yellow]🔍 Unindexed[/yellow] {cascade_id[:8]}... ({size_kb}KB)")
+            console.print(f"  [yellow]Unindexed[/yellow] {cascade_id[:8]}... ({size_kb}KB)")
             continue
 
         # 尝试通过 API 按需加载
         result = get_trajectory_steps(p, c, cascade_id, step_count=5)
         if result:
             activated.append(cascade_id)
-            console.print(f"  [green]✅ Activated[/green] {cascade_id[:8]}... ({size_kb}KB, {len(result)}+ steps)")
+            console.print(f"  [green]Activated[/green] {cascade_id[:8]}... ({size_kb}KB, {len(result)}+ steps)")
         else:
             failed.append(cascade_id)
-            console.print(f"  [red]❌ Failed[/red] {cascade_id[:8]}... ({size_kb}KB)")
+            console.print(f"  [red]Failed[/red] {cascade_id[:8]}... ({size_kb}KB)")
 
     # 汇总
     console.print(f"\n[bold]{'─' * 40}[/bold]")
@@ -412,8 +412,8 @@ def info(
     port: Optional[int] = typer.Option(None, "--port", help="Manually specify port"),
     token: Optional[str] = typer.Option(None, "--token", help="Manually specify CSRF token"),
 ):
-    """ℹ️  Show LanguageServer status information."""
-    console.print(f"\n[bold]🔮 Antigravity History[/bold] v{__version__}\n")
+    """Show LanguageServer status information."""
+    console.print(f"\n[bold]Antigravity History[/bold] v{__version__}\n")
 
     endpoints = _discover_endpoints(port, token)
     summaries, _ = get_all_trajectories_merged(endpoints)
@@ -452,5 +452,5 @@ def main(
         help="Show version",
     ),
 ):
-    """🔮 Export, recover, and analyze your Antigravity conversations."""
+    """Export, recover, and analyze your Antigravity conversations."""
     pass
