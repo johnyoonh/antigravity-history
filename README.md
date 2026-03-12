@@ -33,7 +33,7 @@ Captures AI thinking chains, code diffs, command outputs, and per-message timest
 ## 🚀 Quick Start
 
 ```bash
-pip install antigravity-history==0.2.5 --index-url https://pypi.org/simple --no-cache-dir
+pip install antigravity-history==0.2.6 --index-url https://pypi.org/simple --no-cache-dir
 ```
 
 ```bash
