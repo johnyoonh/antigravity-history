@@ -5,7 +5,7 @@
 [![PyPI Version](https://img.shields.io/pypi/v/antigravity-history)](https://pypi.org/project/antigravity-history/)
 [![Python](https://img.shields.io/pypi/pyversions/antigravity-history)](https://pypi.org/project/antigravity-history/)
 [![License](https://img.shields.io/github/license/neo1027144-creator/antigravity-history)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue)]()
+[![Platform](https://img.shields.io/badge/platform-Windows-blue)]()
 
 > **Export, recover, and analyze your Antigravity AI conversations — with full fidelity.**
 
@@ -109,7 +109,7 @@ aghistory info
 | Platform | Status | Discovery Method |
 |----------|--------|-----------------|
 | **Windows** | ✅ Supported | WMI + netstat |
-| **macOS** | ✅ Supported | pgrep + lsof |
+| **macOS** | 🔜 Coming soon | pgrep + lsof |
 | **Linux** | 🔜 Coming soon | — |
 
 ---
